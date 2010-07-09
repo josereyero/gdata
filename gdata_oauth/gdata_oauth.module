@@ -74,27 +74,22 @@ function gdata_oauth_user_check($account = NULL, $consumer = NULL, $redirect = T
 
 /**
  * Get consumer, creates a new one if missing
+ * 
+ * @return GoogleOAuthConsumer
  */
 function gdata_oauth_get_consumer() {
   static $consumer;
 
-  if (!empty($consumer)) return $consumer;
-
-  $key = variable_get('gdata_oauth_consumer_key', '');
-
-  if ($consumer = DrupalOAuthConsumer::load($key)) {
-    return $consumer;
-  }
-  else {
+  if (!isset($consumer)) {
     $params = array(
-      'name' => 'Google Apps',
-      'provider_consumer' => FALSE,
-      'type' => 'gapps',
+      'key' => variable_get('gdata_oauth_consumer_key', ''),
+      'secret' => variable_get('gdata_oauth_consumer_secret', ''),
+      'name' => 'Google Data',
     );
-    $consumer = new DrupalOAuthConsumer($key, variable_get('gdata_oauth_consumer_secret', ''), oauth_google_authorize_url(), $params);
-    $consumer->write();
-    return $consumer;
-  }   
+    $consumer = oauth_google_get_consumer($params);
+  }
+
+  return $consumer;
 }
 
 /**
@@ -114,6 +109,9 @@ function gdata_oauth_get_user_token($account, $consumer = NULL) {
 
 /**
  * Get http Oauth client
+ * 
+ * @return Drupal_Gdata_OAuth_Client
+ * 
  */
 function gdata_oauth_get_client($account, $consumer = NULL, $token = NULL) {
   $consumer = $consumer ? $consumer : gdata_oauth_get_consumer();
@@ -127,11 +125,14 @@ function gdata_oauth_get_client($account, $consumer = NULL, $token = NULL) {
  * This uses AuthSub and needs a private RSA key. The method works both for AuthSub/OAuth tokens
  */
 function gdata_oauth_get_token_info($token) {
-  //zend_set_include_path();
-  //require_once 'Zend/Gdata/AuthSub.php';
-  $client = new Zend_Gdata_HttpClient();
-  $client->setAuthSubToken($token->getToken());
-  $client->setAuthSubPrivateKey(gdata_get_private_key());
-  $output = Zend_Gdata_AuthSub::getAuthSubTokenInfo($token->getToken(), $client);
+  if ($private_key = gdata_get_private_key()) {
+    $client = new Zend_Gdata_HttpClient();
+    $client->setAuthSubToken($token->getToken());
+    $client->setAuthSubPrivateKey($private_key);
+    $output = Zend_Gdata_AuthSub::getAuthSubTokenInfo($token->getToken(), $client);
+  }
+  else {
+    $output .= t('Cannot get token information. You need to set up an RSA private key for this feature to work.');
+  }
   return $output;
 }

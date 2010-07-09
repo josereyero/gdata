@@ -10,11 +10,13 @@ class Drupal_Gdata_OAuth_Client extends Zend_Oauth_Client {
   protected $user;
   // OAuth Drupal consumer
   protected $consumer;
-  
+  // Version
+  const VERSION = '1.0';
   /**
    * Default constructor
    * 
-   * @param DrupalOauthConsumer $consumer
+   * @param GoogleOauthConsumer $consumer
+   * 
    * @param Zend_Oauth_Token_Access $token
    */
   function __construct($consumer = NULL, $token = NULL) {
@@ -35,7 +37,7 @@ class Drupal_Gdata_OAuth_Client extends Zend_Oauth_Client {
     parent::__construct($oauthOptions);
    
     // Set default values
-    $useragent = 'Drupal_Gdata_Fusion/'; //. Zend_Version::VERSION;
+    $useragent = 'Drupal_Gdata_Fusion/' . self::VERSION;
     $this->setConfig(array(
        'strictredirects' => true,
        'useragent' => $useragent

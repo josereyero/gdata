@@ -89,8 +89,7 @@ function gdata_oauth_user_account_form_submit($form, $form_state) {
       }
       break;
     case t('Authorize token');
-      $client = new GoogleOAuthClient($consumer);
-      $client->setRequestToken($request_token);
+      $client = new GoogleOAuthClient($consumer, $request_token);
       $url = $client->getAuthorizationUrl(variable_get('gdata_default_domain', 'default'));
       drupal_goto($url);
       break;

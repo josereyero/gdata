@@ -1,0 +1,191 @@
+<?php
+// $Id:$
+/**
+ * @file
+ * Integration with Zend Gdata library
+ */
+
+// Default scope: Documents List, Calendar, Contacts
+define('GDATA_DEFAULT_SCOPE', 'http://docs.google.com/feeds/ http://www.google.com/calendar/feeds/ http://www.google.com/m8/feeds/ http://tables.googlelabs.com/api/query/');
+
+/**
+ * Implementation of hook_init()
+ * 
+ * Handles autoloading of Zend Classes. Pending patch http://drupal.org/node/611838
+ */
+function gdata_init() {
+  spl_autoload_register('_gdata_zend_autoload');
+}
+
+/**
+ * Autoload implementation
+ */
+function _gdata_zend_autoload($class) {
+  // Just for classes starting with 'Zend'
+  if (strpos($class, 'Zend_') === 0) {
+    zend_initialize($class);
+  }
+}
+
+/**
+ * Implementation of hook_menu()
+ */
+function gdata_menu() {
+  // Admin pages, prepare for sub tabs
+  $items['admin/settings/gdata'] = array(
+    'title' => 'Google Data',
+    'description' => 'Configure integration with Google Data API',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('gdata_admin_settings_form'),
+    'access arguments' => array('administer google data'),
+    'file' => 'gdata.admin.inc',
+  );
+  $items['admin/settings/gdata/default'] = array(
+    'title' => 'Google Data',
+    'type' => MENU_DEFAULT_LOCAL_TASK
+  );
+  // User pages: overview and placeholder for other tabs
+  $items['user/%user/gdata'] = array(
+    'title' => 'Google',
+    'page callback' => 'gdata_pages_user_account',
+    'page arguments' => array(1),
+    'access callback' => 'gdata_user_access',
+    'access arguments' => array(1),
+    'file' => 'gdata.pages.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['user/%user/gdata/overview'] = array(
+    'title' => 'Overview',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );  
+  return $items;
+}
+
+/**
+ * Check menu access
+ */
+function gdata_user_access($account, $op = 'read') {
+  global $user;
+  
+  return $user->uid == $account->uid && user_access('access own google data') || user_access('access all google data');
+}
+
+/**
+ * Implementation of hook_perm()
+ */
+function gdata_perm() {
+  return array('access own google data', 'access all google data', 'administer google data');
+}
+
+/**
+ * Get site wide private key
+ * 
+ * This one is used to sign Authsub requests
+ */
+function gdata_get_private_key($filepath = NULL) {
+  if ($filepath) {  
+    // Retrieve from file
+    $privKeyFilePath = "./sites/all/certificates/myrsakey.pem";
+    // get rsa private key
+    $fp = fopen($filepath, "r");  
+    $priv_key = fread($fp, 8192);
+    fclose($fp);
+    return $priv_key;
+  }
+  else {
+    return variable_get('gdata_default_private_key', '');
+  }
+}
+
+/**
+ * Get scope as single string
+ */
+function gdata_auth_get_scope() {
+  return variable_get('gdata_default_scope', GDATA_DEFAULT_SCOPE);
+}
+
+/**
+ * Get client object for GDAta
+ * 
+ * The client object will use the passed account's credentials or current user's if not passed
+ */
+function gdata_get_client($account = NULL) {
+  static $clients;
+  $account = gdata_user_account($account);
+  
+  if (!isset($clients)) {
+    zend_set_include_path();
+  }
+  if (!isset($clients[$account->uid])) {
+    $clients[$account->uid] = gdata_auth('get_client', $account);
+  }
+  
+  return $clients[$account->uid];
+}
+
+/**
+ * Get token information for user account
+ */
+function gdata_get_token_info($token) {
+  return gdata_auth('get_token_info', $token);
+}
+
+/**
+ * Utility function: get account object
+ * 
+ * Returns the account passed or a clone of current user if none.
+ */
+function gdata_user_account($account = NULL) {
+  global $user;
+
+  return $account ? $account : $user;  
+} 
+
+/**
+ * Get gdata object from client, checking auth status
+ */
+function gdata_get_service($class = 'Zend_Gdata') {
+  static $gdata;
+
+  if (!isset($gdata[$class])) {
+    $client = gdata_get_client();
+    $gdata[$class] = new $class($client);
+  }
+
+  return $gdata[$class];
+}
+
+/**
+ * Invoke authentication related functions
+ */
+function gdata_auth() {
+  $args = func_get_args();
+  $module = variable_get('gdata_auth_module', 'gdata_oauth');
+  $function = $module . '_' .array_shift($args);
+  if (function_exists($function)) {
+    return call_user_func_array($function, $args);
+  }
+  else {
+    drupal_set_message(t('You need to enable some authentication module for Google API (OAuth, AuthSub...)'), 'error');
+  }
+}
+
+/**
+ * Check the user has set up credentials
+ * @param $account
+ * @param $redirect
+ * @return unknown_type
+ */
+function gdata_auth_user_check($account = NULL, $redirect = TRUE) {
+  return gdata_auth('user_check', gdata_user_account($account), NULL, $redirect);
+}
+
+/**
+ * Print exception
+ */
+function _gdata_print_exception($e) {
+  $output = '<pre>';
+  $output .= print_r($e, TRUE);
+  $output .= '</pre>';
+  return $output;
+}

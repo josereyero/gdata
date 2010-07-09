@@ -1,0 +1,10 @@
+; $Id: oauth_common.info,v 1.2 2009/05/12 10:56:13 jreyero Exp $
+name = Google Data OAuth
+description = Provides OAuth authentication for Zend Gdata API
+dependencies[] = gdata
+dependencies[] = oauth_google
+package = "Google API"
+core = 6.x
+
+
+

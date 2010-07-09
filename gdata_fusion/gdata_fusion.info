@@ -1,0 +1,7 @@
+; $Id: Exp $
+name = Google Fusion API
+description = Integration with Google Fusion Tables
+package = Google API
+dependencies[] = gdata
+dependencies[] = gdata_oauth
+core = 6.x

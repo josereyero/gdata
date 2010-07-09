@@ -1,0 +1,7 @@
+; $Id: oauth_common.info,v 1.2 2009/05/12 10:56:13 jreyero Exp $
+name = Google Data API
+description = Integration with Zend Gdata library
+package = Google API
+dependencies[] = zend
+dependencies[] = autoload
+core = 6.x

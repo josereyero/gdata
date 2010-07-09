@@ -1,0 +1,190 @@
+<?php
+// $Id:$
+/**
+ * @file
+ * Integration with Google Fusion Tables
+ * 
+ * @see Drupal_Gdata_Fusion class
+ *   
+ * Usage:
+ *   $gdata = gdata_fusion_user_get_client($user);
+ *   
+ *   $table_id = $gdata->createTable('People', array('name' => 'STRING', age => 'NUMBER'));
+ *   
+ *   $gdata->insertRow($table_id, array('name' => 'Jose', 'age' => 20);
+ *   
+ *   $gdata->insertRow($table_id, array('name' => 'Jose', 'age' => 21);
+ *   
+ *   $array = $gdata->query("SELECT name, age FROM $table_id");
+ *   
+ *   At this point the resulting array should be:
+ *   $array == array(
+ *     array('name', 'age'), // Field names
+ *     array('Jose', 20), // First row of data
+ *     array('Alex', 21), // Second row of data
+ *   );
+ *   
+ * Documentation for Google API:
+ *   http://code.google.com/apis/fusiontables/docs/developers_guide.html
+ *   http://code.google.com/apis/fusiontables/docs/developers_reference.html
+ *   
+ * @todo
+ * - Implmement missing functionality
+ * - IMPORTANT. These queries need proper validation to prevent SQL injection as if they were usual db queries.
+ * 
+ * @author Jose A. Reyero for Development Seed, 2010
+ */
+
+// Google API entry point
+define('GDATA_FUSION_API_QUERY', 'http://tables.googlelabs.com/api/query/');
+
+/**
+ * Implementation hook_autoload_info().
+ */
+function gdata_fusion_autoload_info() {
+  $zend_path = zend_get_path();
+  return array(
+    'Drupal_Gdata_Fusion'           => array('file' => 'gdata_fusion.class.inc'),
+    'Drupal_Gdata_Fusion_Response'  => array('file' => 'gdata_fusion.class.inc'),
+  );
+}
+
+/**
+ * Implementation of hook_menu()
+ */
+function gdata_fusion_menu() {
+  // User pages: overview and placeholder for other tabs
+  $items['user/%user/gdata/query'] = array(
+    'title' => 'Query',
+    'page callback' => 'gdata_fusion_query_page',
+    'page arguments' => array(1),
+    'access callback' => 'gdata_user_access',
+    'access arguments' => array(1),
+    'file' => 'gdata_fusion.pages.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+  return $items;
+}
+
+/**
+ * Get client object for this user account
+ * 
+ * This can redirect to the Google/OAuth authorization page if the user is not properly authenticated to Google
+ * 
+ * @param $account
+ *   User account object, defaults to current user
+ * @param $redirect
+ *   
+ * @return Drupal_Gdata_Fusion
+ */
+function gdata_fusion_user_get_client($account = NULL, $redirect = TRUE) {
+  global $user;
+  
+  $account = $account ? $account : $user;
+  $consumer = gdata_oauth_get_consumer();
+  
+  if ($token = gdata_oauth_user_check($account, $consumer, $redirect)) {
+    return gdata_fusion_get_service($account, $consumer, $token);
+  }
+  
+}
+
+/**
+ * Get gdata fusion object, checking auth status
+ * 
+ * @param $account
+ *   Drupal user account
+ * @param $consumer
+ *   OAuth consumer, DrupalOAuthConsumer object
+ * @pram $token
+ *   OAuth access token, Zend_Oauth_Token_Access object
+ *   
+ * @return Drupal_Gdata_Fusion
+ *   Fusion Tables object authenticated with user credentials
+ */
+function gdata_fusion_get_service($account, $consumer = NULL, $token = NULL) {
+  $consumer = $consumer ? $consumer : gdata_oauth_get_consumer();
+  if ($consumer) {
+    $token = $token ? $token : gdata_oauth_get_user_token($account, $consumer);
+    if ($token) {
+      // Get OAuth Http client and pass it to our Fusion Tables wrapper
+      if ($client = gdata_oauth_get_client($account, $consumer, $token))  {
+        return new Drupal_Gdata_Fusion($client);
+      }
+    }
+  }
+}
+ 
+/**
+ * Check values for insert statements
+ * 
+ * @todo Proper filtering and escaping
+ */
+function _gdata_fusion_escape_value($value) {
+  if (is_numeric($value)) {
+    return (string)floatval($value);
+  }
+  elseif (is_string($value)) {
+    return _gdata_fusion_escape_string($value);
+  }
+  else {
+    // Last resort, convert to string and escape
+    return _gdata_fusion_escape_string((string)$value);
+  }
+}
+
+/**
+ * Escape string value
+ */
+function _gdata_fusion_escape_string($string, $wrapper = "'", $wrap = TRUE) {
+  $string = str_replace($wrapper, "\\" . $wrapper, trim($string));
+  return $wrap ? $wrapper . $string . $wrapper : $string;
+}
+
+/**
+ * Check output for a full array
+ */
+function _gdata_fusion_check_array($array) {
+  return array_map('check_plain', $array); 
+}
+
+/**
+ * Callback function to properly escape arguments in queries
+ * @see _db_query_callback()
+ */
+function _gdata_fusion_query_callback($match, $init = FALSE) {
+  static $args = NULL;
+  if ($init) {
+    $args = $match;
+    return;
+  }
+
+  switch ($match[1]) {
+    case '%d': // We must use type casting to int to convert FALSE/NULL/(TRUE?)
+      $value = array_shift($args);
+      // Do we need special bigint handling?
+      if ($value > PHP_INT_MAX) {
+        $precision = ini_get('precision');
+        @ini_set('precision', 16);
+        $value = sprintf('%.0f', $value);
+        @ini_set('precision', $precision);
+      }
+      else {
+        $value = (int) $value;
+      }
+      // We don't need db_escape_string as numbers are db-safe.
+      return $value;
+    case '%s':
+      // Escape string without aditional wrapping
+      return _gdata_fusion_escape_string(array_shift($args), "'", FALSE);
+    case '%n':
+      // Numeric values have arbitrary precision, so can't be treated as float.
+      // is_numeric() allows hex values (0xFF), but they are not valid.
+      $value = trim(array_shift($args));
+      return is_numeric($value) && !preg_match('/x/i', $value) ? $value : '0';
+    case '%%':
+      return '%';
+    case '%f':
+      return (float) array_shift($args);
+  }
+}

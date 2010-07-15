@@ -3,18 +3,20 @@
  * Google Apps site wide settings
  */
 function gdata_admin_settings_form() {
-  $form['gdata_default_scope'] = array(
+  /*
+  $form['oauth_google_default_scope'] = array(
     '#type' => 'textarea',
     '#title' => t('Scope'),
-    '#default_value' => variable_get('gdata_default_scope', GDATA_DEFAULT_SCOPE),
+    '#default_value' => variable_get('oauth_google_default_scope', OAUTH_GOOGLE_DEFAULT_SCOPE),
     '#required' => TRUE,
   );
-  $form['gdata_default_domain'] = array(
+  $form['oauth_google_default_domain'] = array(
     '#type' => 'textfield',
     '#title' => t('Domain'),
-    '#default_value' => variable_get('gdata_default_domain', 'default'),
+    '#default_value' => variable_get('oauth_google_default_domain', 'default'),
     '#description' => t('Google Apps domain. Let default value to use regular Google accounts.'),
   );
+  */
   $form['keys'] = array(
     '#type' => 'fieldset',
     '#title' => t('Private keys'),

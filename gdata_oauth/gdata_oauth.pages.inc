@@ -11,8 +11,8 @@ function gdata_oauth_user_account_form($form_state, $account, $consumer = NULL) 
   $form['account'] = array('#type' => 'value', '#value' => $account);
   $form['consumer'] = array('#type' => 'value', '#value' => $consumer);
   // These are GoogleOauthToken objects
-  $request_token = oauth_google_get_user_token($account, $consumer, GoogleOAuthToken::GDATA_REQUEST_TOKEN);
-  $access_token = oauth_google_get_user_token($account, $consumer, GoogleOAuthToken::GDATA_ACCESS_TOKEN);
+  $request_token = oauth_google_get_user_token($account, $consumer, 'request');
+  $access_token = oauth_google_get_user_token($account, $consumer, 'access');
   $form['request_token'] = array('#type' => 'value', '#value' => $request_token);
   $form['access_token'] = array('#type' => 'value', '#value' => $access_token);
 
@@ -77,7 +77,7 @@ function gdata_oauth_user_account_form_submit($form, $form_state) {
       break;
     case t('Request token');
       $client = new GoogleOAuthClient($consumer);
-      $client->scope = gdata_auth_get_scope();
+      $client->scope = gdata_oauth_get_scope();
       $token = $client->getRequestToken();
       if ($token) {
         $token->uid = $account->uid;
@@ -90,7 +90,7 @@ function gdata_oauth_user_account_form_submit($form, $form_state) {
       break;
     case t('Authorize token');
       $client = new GoogleOAuthClient($consumer, $request_token);
-      $url = $client->getAuthorizationUrl(variable_get('gdata_default_domain', 'default'));
+      $url = $client->getAuthorizationUrl(variable_get('oauth_google_default_domain', 'default'));
       drupal_goto($url);
       break;
 

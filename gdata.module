@@ -101,7 +101,7 @@ function gdata_get_private_key($filepath = NULL) {
  * Get scope as single string
  */
 function gdata_auth_get_scope() {
-  return variable_get('gdata_default_scope', GDATA_DEFAULT_SCOPE);
+  return gdata_auth('get_scope');
 }
 
 /**

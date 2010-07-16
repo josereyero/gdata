@@ -4,6 +4,15 @@
  * Zend Gdata OAuth client library
  */
 
+/**
+ * Implementation of hook_help()
+ */
+function gdata_oauth_help($path, $arg) {
+  switch ($path) {
+    case 'admin/settings/gdata':
+      return t('OAuth authentication is enabled for Google Data. Check out authentication parameters on <a href="@oauth-settings">OAuth settings</a>.', array('@oauth-settings' => url('admin/settings/oauth/google')));
+  }
+}
 
 /**
  * Implementation hook_autoload_info().
@@ -21,13 +30,6 @@ function gdata_oauth_autoload_info() {
  * Implementation of hook_menu()
  */
 function gdata_oauth_menu() {
-  // Admin pages, reusing settings from oauth_google
-  $items['admin/settings/gdata/oauth'] = array(
-    'title' => 'OAuth',
-    'page callback' => 'gdata_oauth_admin_settings',
-    'access arguments' => array('administer google data'),
-    'type' => MENU_LOCAL_TASK,
-  );  
   // User authentication status
   $items['user/%user/gdata/oauth'] = array(
     'title' => 'Authorize',
@@ -40,14 +42,6 @@ function gdata_oauth_menu() {
     'weight' => 100, 
   );
   return $items;
-}
-
-/**
- * Implementation of hook_form_alter : Duplicate settings from from 
- */
-function gdata_oauth_admin_settings() {
-  module_load_include('admin.inc', 'oauth_google');
-  return drupal_get_form('oauth_google_admin_settings_form');
 }
 
 /**

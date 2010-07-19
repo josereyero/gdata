@@ -314,6 +314,26 @@ class Drupal_Gdata_Fusion_Response {
   }
 
   /**
+   * Get rows keyed by header.
+   */
+  public function get_keyed_rows() {
+    if (!isset($this->keyed_rows)) {
+      $this->get_array();
+      if (empty($this->header) || empty($this->data)) {
+        $this->keyed_rows = array();
+      }
+      else {
+        foreach ($this->data as $i => $row) {
+          foreach ($row as $k => $v) {
+            $this->keyed_rows[$i][$this->header[$k]] = $v;
+          }
+        }
+      }
+    }
+    return $this->keyed_rows;
+  }
+
+  /**
    * Get header (first row of data array)
    */
   public function get_header() {

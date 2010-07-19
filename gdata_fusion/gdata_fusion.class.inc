@@ -294,6 +294,7 @@ class Drupal_Gdata_Fusion_Response {
     $this->response = $response;
     $this->csv = $response->getBody();
   }
+
   /**
    * Get raw CSV data
    */
@@ -311,6 +312,7 @@ class Drupal_Gdata_Fusion_Response {
     }
     return $this->data;
   }
+
   /**
    * Get header (first row of data array)
    */
@@ -379,6 +381,7 @@ class Drupal_Gdata_Fusion_Response {
     $rows = array_map('_gdata_fusion_check_array', $this->get_rows());
     return theme('table', $header , $rows);
   }
+
   /**
    * Format raw CSV as HTML output
    */

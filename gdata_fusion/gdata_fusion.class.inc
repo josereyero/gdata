@@ -324,6 +324,9 @@ class Drupal_Gdata_Fusion_Response {
       }
       else {
         foreach ($this->data as $i => $row) {
+          if ($i == 0) {
+            continue;
+          }
           foreach ($row as $k => $v) {
             $this->keyed_rows[$i][$this->header[$k]] = $v;
           }

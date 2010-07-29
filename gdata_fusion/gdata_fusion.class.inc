@@ -14,7 +14,7 @@
 class Drupal_Gdata_Fusion extends Zend_Gdata_App {
   protected $_defaultPostUri = GDATA_FUSION_API_QUERY;
   protected $tableList;
-  
+
   /**
    * Class constructor
    */
@@ -22,6 +22,7 @@ class Drupal_Gdata_Fusion extends Zend_Gdata_App {
     parent::__construct($client, $applicationId);
     $this->_httpClient->setUri($this->_defaultPostUri);
   }
+
   /**
    * Create table
    *
@@ -123,13 +124,13 @@ class Drupal_Gdata_Fusion extends Zend_Gdata_App {
 
   /**
    * Get tables under user account
-   * 
-   * Note: SHOW TABLES will only display tables for which the authenticated user is listed as 
+   *
+   * Note: SHOW TABLES will only display tables for which the authenticated user is listed as
    * an owner, collaborator, contributor, or viewer on the table.
    * See http://code.google.com/apis/fusiontables/docs/developers_guide.html#Exploring
-   * 
+   *
    * The table list is an array with table_id => table_name
-   * 
+   *
    * @param $refresh
    *   Refresh table list from server
    */
@@ -145,12 +146,12 @@ class Drupal_Gdata_Fusion extends Zend_Gdata_App {
     }
     return $this->tableList;
   }
-  
+
   /**
    * Set user table list, in case we know about the tables we are using beforehand
-   * 
-   * This will skip querying for tables and will also allow using tables not owned by the user 
-   * 
+   *
+   * This will skip querying for tables and will also allow using tables not owned by the user
+   *
    * @param $tables
    *   Array with table_id => table_name
    */
@@ -160,7 +161,7 @@ class Drupal_Gdata_Fusion extends Zend_Gdata_App {
 
   /**
    * Get Id for a table name
-   * 
+   *
    * @param $name
    *   Table name
    * @return int
@@ -169,7 +170,7 @@ class Drupal_Gdata_Fusion extends Zend_Gdata_App {
   public function getTableId($name) {
     return array_search($name, $this->getTables());
   }
-  
+
   /**
    * Build simple insert statement
    */
@@ -182,7 +183,7 @@ class Drupal_Gdata_Fusion extends Zend_Gdata_App {
    *
    * The SQL has a special syntax defined here
    * http://code.google.com/apis/fusiontables/docs/developers_reference.html
-   * 
+   *
    * @see db_query()
    *
    * @param $sql
@@ -212,7 +213,7 @@ class Drupal_Gdata_Fusion extends Zend_Gdata_App {
 
   /**
    * Resolve table names to table ids.
-   * 
+   *
    * Replaces table names enclosed in {} with their table ids. This is similar to Drupal table prefixing.
    */
   protected function replace_tables($query) {
@@ -222,7 +223,7 @@ class Drupal_Gdata_Fusion extends Zend_Gdata_App {
     }
     return strtr($query, $tables);
   }
-  
+
   /**
    * Raw query
    *
@@ -243,7 +244,7 @@ class Drupal_Gdata_Fusion extends Zend_Gdata_App {
       return FALSE;
     }
   }
-  
+
   /**
    * Post parameters
    */
@@ -264,7 +265,7 @@ class Drupal_Gdata_Fusion extends Zend_Gdata_App {
       // Still we return the response
       //$response = $exception->getResponse();
       return FALSE;
-    }    
+    }
   }
 }
 
@@ -293,6 +294,7 @@ class Drupal_Gdata_Fusion_Response {
     $this->response = $response;
     $this->csv = $response->getBody();
   }
+
   /**
    * Get raw CSV data
    */
@@ -310,6 +312,30 @@ class Drupal_Gdata_Fusion_Response {
     }
     return $this->data;
   }
+
+  /**
+   * Get rows keyed by header.
+   */
+  public function get_keyed_rows() {
+    if (!isset($this->keyed_rows)) {
+      $this->get_array();
+      if (empty($this->header) || empty($this->data)) {
+        $this->keyed_rows = array();
+      }
+      else {
+        foreach ($this->data as $i => $row) {
+          if ($i == 0) {
+            continue;
+          }
+          foreach ($row as $k => $v) {
+            $this->keyed_rows[$i][$this->header[$k]] = $v;
+          }
+        }
+      }
+    }
+    return $this->keyed_rows;
+  }
+
   /**
    * Get header (first row of data array)
    */
@@ -358,7 +384,7 @@ class Drupal_Gdata_Fusion_Response {
 
   /**
    * Get first column as array of values
-   * 
+   *
    * @param $index
    *   Field to return
    */
@@ -378,13 +404,14 @@ class Drupal_Gdata_Fusion_Response {
     $rows = array_map('_gdata_fusion_check_array', $this->get_rows());
     return theme('table', $header , $rows);
   }
+
   /**
    * Format raw CSV as HTML output
    */
   public function format_csv() {
     return '<pre>' . check_plain($this->get_csv()) . '</pre>';
   }
-  
+
   /**
    * Convert csv multiline result into array of arrays
    */

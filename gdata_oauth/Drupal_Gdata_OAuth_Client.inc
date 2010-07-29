@@ -15,7 +15,7 @@ class Drupal_Gdata_OAuth_Client extends Zend_Oauth_Client {
   /**
    * Default constructor
    * 
-   * @param GoogleOauthConsumer $consumer
+   * @param DrupalOauthConsumer $consumer
    * 
    * @param Zend_Oauth_Token_Access $token
    */

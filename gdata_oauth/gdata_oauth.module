@@ -21,8 +21,6 @@ function gdata_oauth_autoload_info() {
   $zend_path = zend_get_path();
   return array(
     'Drupal_Gdata_OAuth_Client'          => array('file' => 'Drupal_Gdata_OAuth_Client.inc'),
-    //'Zend_Oauth_Client'              => array('file' => 'Zend/Oauth/Client.php', 'file path' => $zend_path),
-    //'Zend_Oauth_Token_Access'              => array('file' => 'Zend/Oauth/Token/Access.php', 'file path' => $zend_path),
   );
 }
 
@@ -33,15 +31,22 @@ function gdata_oauth_menu() {
   // User authentication status
   $items['user/%user/gdata/oauth'] = array(
     'title' => 'Authorize',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('gdata_oauth_user_account_form', 1),
+    'page callback' => 'gdata_oauth_user_account_page',
+    'page arguments' => array(1),
     'access callback' => 'gdata_user_access',
     'access arguments' => array(1),
-    'file' => 'gdata_oauth.pages.inc',
     'type' => MENU_LOCAL_TASK,
     'weight' => 100, 
   );
   return $items;
+}
+
+/**
+ * Wrapper for user account page
+ */
+function gdata_oauth_user_account_page($account) {
+  module_load_include('pages.inc', 'oauth_google');
+  return drupal_get_form('oauth_google_user_account_form', $account); 
 }
 
 /**
@@ -75,7 +80,7 @@ function gdata_oauth_user_check($account = NULL, $consumer = NULL, $redirect = T
 /**
  * Get consumer, creates a new one if missing
  * 
- * @return GoogleOAuthConsumer
+ * @return DrupalOAuthConsumer
  */
 function gdata_oauth_get_consumer() {
   static $consumer;
